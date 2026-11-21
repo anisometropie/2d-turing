@@ -8,9 +8,9 @@ SDL_LIBS = $(shell $(PKG_CONFIG) --libs sdl2)
 
 all: 2d-turing
 
-2d-turing: main.c window.c window.h
+2d-turing: main.c window.c window.h square.c square.h
 	@$(PKG_CONFIG) --exists sdl2 || { echo "SDL2 development files are required (see README.md)" >&2; exit 1; }
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) main.c window.c -o $@ $(SDL_LIBS)
+	$(CC) $(CFLAGS) $(SDL_CFLAGS) main.c window.c square.c -o $@ $(SDL_LIBS)
 
 clean:
 	rm -f 2d-turing
