@@ -15,7 +15,7 @@ all: 2d-turing
 
 build/tests/%_test: tests/%_test.c %.c $(TEST_SUPPORT_SOURCES) $(wildcard *.h tests/*.h) Makefile
 	@mkdir -p build/tests
-	@$(CC) $(CFLAGS) -UNDEBUG $(SDL_CFLAGS) -I. $(sort $< $*.c $(TEST_SUPPORT_SOURCES)) -o $@ $(SDL_LIBS)
+	@$(CC) $(CFLAGS) -g3 -O0 -UNDEBUG $(SDL_CFLAGS) -I. $(sort $< $*.c $(TEST_SUPPORT_SOURCES)) -o $@ $(SDL_LIBS)
 
 test:
 	@python3 scripts/watch_tests.py --once

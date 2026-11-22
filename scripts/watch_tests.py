@@ -2,9 +2,12 @@
 """Run C tests on startup and after source files are saved."""
 
 import os
+import json
 from pathlib import Path
+import shutil
 import subprocess
 import sys
+import tempfile
 import time
 
 
@@ -28,11 +31,51 @@ def snapshot():
   return files
 
 
+def execute_test(binary):
+  with tempfile.TemporaryDirectory(prefix="c-test-report-") as directory:
+    output = Path(directory) / "output.txt"
+    report = Path(directory) / "report.json"
+    debugger = subprocess.run(
+      ["gdb", "--quiet", "--nx", "--batch", "-x", str(ROOT / "scripts/assertion_report.py"),
+       "--args", str(ROOT / binary)], cwd=ROOT,
+      env={**os.environ, "C_TEST_OUTPUT": str(output), "C_TEST_REPORT": str(report)},
+      stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    if not report.exists():
+      return {"kind": "error", "message": debugger.stdout}, ""
+    result = json.loads(report.read_text())
+    return result, output.read_text(errors="replace") if output.exists() else ""
+
+
+def print_failure(result, output):
+  if result.get("kind") == "assertion":
+    case = f" / {result['case']}" if "case" in result else ""
+    print(f"  {result['function']}{case}", flush=True)
+    print(f"  {result['file']}:{result['line']}", flush=True)
+    if "actual" in result and result["operator"] == "==":
+      print(f"  {result['left']}: expected {result['expected']}, got {result['actual']}", flush=True)
+    else:
+      print(f"  Assertion failed: {result['expression']}", flush=True)
+      if "actual" in result:
+        print(f"  {result['left']} = {result['actual']}; {result['right']} = {result['expected']}", flush=True)
+  else:
+    if output:
+      print(output, end="", flush=True)
+    if result.get("kind") == "signal":
+      print(f"  Stopped by {result['signal']}", flush=True)
+    elif result.get("kind") == "error":
+      print(f"  Debugger error: {result['message']}", flush=True)
+    else:
+      print(f"  Exit code: {result.get('code', 'unknown')}", flush=True)
+
+
 def run_tests():
   binaries = [f"build/tests/{path.stem}" for path in sorted((ROOT / "tests").glob("*_test.c"))]
   if not binaries:
     print("No tests found.", flush=True)
     return 0
+  if shutil.which("gdb") is None:
+    print("Test reporting requires GDB. Install it with: sudo apt install gdb", flush=True)
+    return 1
 
   build = subprocess.run(
     ["make", "--silent", "--no-print-directory", *binaries], cwd=ROOT,
@@ -43,15 +86,14 @@ def run_tests():
 
   failed = False
   for binary in binaries:
-    result = subprocess.run(
-      [str(ROOT / binary)], cwd=ROOT,
-      stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
+    result, output = execute_test(binary)
     name = Path(binary).stem.removesuffix("_test")
-    status = "passed" if result.returncode == 0 else "FAILED"
+    passed = result.get("kind") == "exit" and result.get("code") == 0
+    status = "passed" if passed else "FAILED"
     print(f"{name}: {status}", flush=True)
-    if result.returncode != 0:
+    if not passed:
       failed = True
-      print(result.stdout, end="", flush=True)
+      print_failure(result, output)
   return int(failed)
 
 
