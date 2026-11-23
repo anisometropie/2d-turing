@@ -66,9 +66,10 @@ states A and B plus halt H, each of the four rules has 12 choices, giving
 The two-state gallery has 324 pages of 64 previews. Use First/Prev/Next/Last,
 Page Up/Page Down (or Left/Right), and Home/End to browse. Returning from a
 machine keeps the current page. The 1 State and 2 States buttons switch galleries.
-The compact previous/next groups are `-6 -3 -1` and `+1 +3 +6`. The 1 buttons
-move one page. The 3 and 6 buttons jump to the first machine in the next or
-previous group sharing those leftmost characters. The destination page opens
+The compact previous/next groups are `<<< << <` and `> >> >>>`. Single arrows
+move one page, double arrows jump by the leftmost 6 characters, and triple arrows
+jump by the leftmost 3 characters. Jumps go to the first machine in the next or
+previous group sharing that prefix. The destination page opens
 and that machine gets a blue outline. Further jumps use the highlighted machine,
 including when a group begins partway through a page. Clicking a tile also selects
 it. Group jumps work within the single page of one-state machines too.

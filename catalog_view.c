@@ -69,11 +69,11 @@ static void draw_tile(SDL_Renderer *renderer, const MachinePreview *preview,
 
 static SDL_Rect navigation_button(int index, int width) {
   if (index == 1 || index == 8 || index == 9) {
-    int part = index == 1 ? 2 : index == 8 ? 1 : 0;
+    int part = index == 1 ? 2 : index == 9 ? 1 : 0;
     return (SDL_Rect){MARGIN + 76 + part * 23, 46, part == 2 ? 22 : 21, 20};
   }
   if (index == 2 || index == 6 || index == 7) {
-    int part = index == 2 ? 0 : index - 5;
+    int part = index == 2 ? 0 : index == 7 ? 1 : 2;
     return (SDL_Rect){MARGIN + 2 * 76 + part * 23, 46, part == 2 ? 22 : 21, 20};
   }
   if (index < 4)
@@ -101,11 +101,11 @@ static void draw_grid(SDL_Renderer *renderer, const MachinePreview *previews,
   snprintf(label, sizeof label, "%d-STATE MACHINES / %d TOTAL", states, count);
   ui_text(renderer, MARGIN, 12, label, 2);
   ui_text(renderer, MARGIN, 34, "ZERO TAPE / FIRST 24 STEPS / RED: HEAD / BLUE: SELECTED / CLICK TO OPEN", 1);
-  snprintf(label, sizeof label, "PAGE %d/%d / MACHINES %d-%d / 1 PAGE  3/6 LEFT PREFIX",
+  snprintf(label, sizeof label, "PAGE %d/%d / MACHINES %d-%d / > PAGE  >> 6 SYMBOLS  >>> 3 SYMBOLS",
            page + 1, pages, page * PAGE_SIZE + 1, (page + 1) * PAGE_SIZE);
   ui_text(renderer, 330, 52, label, 1);
 
-  static const char *labels[] = {"FIRST", "-1", "+1", "LAST", "1 STATE", "2 STATES", "+3", "+6", "-3", "-6"};
+  static const char *labels[] = {"FIRST", "<", ">", "LAST", "1 STATE", "2 STATES", ">>>", ">>", "<<<", "<<"};
   for (int i = 0; i < 10; i++) {
     bool enabled = i == 0 ? selected > 0 : i == 1 ? page > 0 : i < 4 ? page < pages - 1 :
       i < 6 ? states != i - 3 : group_target(states, selected, i) >= 0;
