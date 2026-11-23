@@ -70,8 +70,8 @@ void it_should_still_start_standalone_machines_at_zero(void) {
 static void click_restart(void) {
   SDL_Event event = {.type = SDL_MOUSEBUTTONDOWN};
   event.button.button = SDL_BUTTON_LEFT;
-  event.button.x = 180;
-  event.button.y = 58;
+  event.button.x = 780;
+  event.button.y = 18;
   SDL_PushEvent(&event);
 }
 
@@ -158,6 +158,31 @@ void it_should_hide_past_heads_when_unchecked(void) {
   assert(pixel_at(532, 124) == 0xffdc4123);
 }
 
+static void click_play_pause(void) {
+  SDL_Event event = {.type = SDL_MOUSEBUTTONDOWN};
+  event.button.button = SDL_BUTTON_LEFT;
+  event.button.x = 880;
+  event.button.y = 18;
+  SDL_PushEvent(&event);
+}
+
+void it_should_toggle_play_and_pause(void) {
+  const TuringMachine *machine = turing_init("1RA0LA", false);
+  click_play_pause();
+  close_after_first_frame();
+  tape_view_run(renderer, machine, true, 24);
+  const char *title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "RUNNING") != NULL);
+
+  machine = turing_init("1RA0LA", false);
+  click_play_pause();
+  click_play_pause();
+  close_after_first_frame();
+  tape_view_run(renderer, machine, true, 24);
+  title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "PAUSED") != NULL);
+}
+
 int main(void) {
   SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
   SDL_Init(SDL_INIT_VIDEO);
@@ -173,6 +198,7 @@ int main(void) {
   it_should_allow_stepping_after_restarting_a_halted_machine();
   it_should_show_the_head_on_each_row_when_checked();
   it_should_hide_past_heads_when_unchecked();
+  it_should_toggle_play_and_pause();
 
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
