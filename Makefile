@@ -13,9 +13,12 @@ all: 2d-turing
 	@$(PKG_CONFIG) --exists sdl2 || { echo "SDL2 development files are required (see README.md)" >&2; exit 1; }
 	$(CC) $(CFLAGS) $(SDL_CFLAGS) main.c window.c tape_view.c ui_text.c turing.c machine_catalog.c catalog_view.c -o $@ $(SDL_LIBS) -lm
 
+build/tests/tape_view_test: TEST_SUPPORT_SOURCES += ui_text.c
+build/tests/tape_view_test: ui_text.c
+
 build/tests/%_test: tests/%_test.c %.c $(TEST_SUPPORT_SOURCES) $(wildcard *.h tests/*.h) Makefile
 	@mkdir -p build/tests
-	@$(CC) $(CFLAGS) -g3 -O0 -UNDEBUG $(SDL_CFLAGS) -I. $(sort $< $*.c $(TEST_SUPPORT_SOURCES)) -o $@ $(SDL_LIBS)
+	@$(CC) $(CFLAGS) -g3 -O0 -UNDEBUG $(SDL_CFLAGS) -I. $(sort $< $*.c $(TEST_SUPPORT_SOURCES)) -o $@ $(SDL_LIBS) -lm
 
 test:
 	@python3 scripts/watch_tests.py --once

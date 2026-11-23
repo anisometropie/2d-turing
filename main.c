@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
   } else {
     const char *program = argc > 1 ? argv[1] : "1RB1RH_1LB0RC_1LC1LA";
     const TuringMachine *machine = turing_init(program, false);
-    result = tape_view_run(renderer, machine, false) == TAPE_VIEW_ERROR ? 1 : 0;
+    result = tape_view_run(renderer, machine, false, 0) == TAPE_VIEW_ERROR ? 1 : 0;
   }
   window_close(renderer);
   return result;

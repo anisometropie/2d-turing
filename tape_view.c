@@ -325,7 +325,7 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
 }
 
 TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machine,
-                             bool from_grid) {
+                             bool from_grid, size_t initial_steps) {
   TapeHistory history = {0};
   TapeCanvas canvas = {0};
   TapeViewport view = {.cell_size = MAX_CELL_SIZE, .follow_latest = true};
@@ -342,6 +342,8 @@ TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machin
   bool dirty = true;
   bool dragging = false;
   const char *stopped = machine->state == 'H' ? "HALTED" : NULL;
+  for (size_t i = 0; i < initial_steps && stopped == NULL; i++)
+    stopped = advance(&history, machine);
   double slider = log(60.0) / log(MAX_SPEED);
   int speed = 60;
   double credit = 0;

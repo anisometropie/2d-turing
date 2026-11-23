@@ -174,7 +174,7 @@ int catalog_view_run(SDL_Renderer *renderer, int states) {
         SDL_Rect tile = tile_rect(i, width, height);
         if (SDL_PointInRect(&mouse, &tile)) {
           const TuringMachine *machine = turing_init(previews[i].instructions, false);
-          TapeViewResult result = tape_view_run(renderer, machine, true);
+          TapeViewResult result = tape_view_run(renderer, machine, true, previews[i].steps);
           if (result != TAPE_VIEW_BACK)
             return result == TAPE_VIEW_ERROR ? 1 : 0;
           dirty = true;

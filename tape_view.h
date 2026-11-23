@@ -11,6 +11,6 @@ typedef enum {
 } TapeViewResult;
 
 TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machine,
-                             bool from_grid);
+                             bool from_grid, size_t initial_steps);
 
 #endif

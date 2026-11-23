@@ -42,7 +42,8 @@ a working state. Mirror images and rules with identical behaviour are included.
 
 Each tile shows its instructions and the first 24 steps on a zero-filled tape,
 or stops earlier if it halts. Black is 1, white is 0, and red marks the head on
-each row. Click a tile to open the normal viewer, starting paused at step 0.
+each row. Click a tile to open the normal viewer, paused at the last preview
+step with the full preview history already shown.
 Use Step or Space to explore it further; click Back to Grid or press Escape to
 return. Closing the window exits the application.
 
