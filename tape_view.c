@@ -7,6 +7,7 @@
 #include <string.h>
 
 enum { MAX_CELL_SIZE = 20, MARGIN = 12, TOOLBAR_HEIGHT = 84, MAX_SPEED = 10000 };
+enum { MAX_ZOOM_CELL_SIZE = 80 };
 
 typedef struct {
   int64_t head;
@@ -37,6 +38,8 @@ typedef struct {
   int cell_size;
   bool initialized;
   bool follow_latest;
+  bool manual_zoom;
+  double zoom_remainder;
   double horizontal_remainder;
   double vertical_remainder;
 } TapeViewport;
@@ -151,7 +154,7 @@ static void update_viewport(SDL_Renderer *renderer, const TapeHistory *history,
   if (usable_width < 1 || usable_height < 1)
     return;
 
-  if (view->follow_latest) {
+  if (view->follow_latest && !view->manual_zoom) {
     int size = view->cell_size;
     int columns = usable_width / size;
     int margin = columns / 10;
@@ -199,6 +202,47 @@ static void update_viewport(SDL_Renderer *renderer, const TapeHistory *history,
   size_t maximum = history->count > visible ? history->count - visible : 0;
   if (view->follow_latest || view->first_row > maximum)
     view->first_row = maximum;
+}
+
+static bool zoom_viewport(SDL_Renderer *renderer, const TapeHistory *history,
+                           TapeViewport *view, double amount, int mouse_x, int mouse_y) {
+  int width;
+  int height;
+  SDL_GetRendererOutputSize(renderer, &width, &height);
+  if (mouse_x < MARGIN || mouse_x >= width - MARGIN ||
+      mouse_y < TOOLBAR_HEIGHT || mouse_y >= height - MARGIN)
+    return false;
+
+  view->zoom_remainder += amount;
+  double clicks = trunc(view->zoom_remainder);
+  view->zoom_remainder -= clicks;
+  if (clicks == 0)
+    return false;
+  int old_size = view->cell_size;
+  int size = (int)round(fmax(1, fmin(MAX_ZOOM_CELL_SIZE, old_size * pow(1.25, clicks))));
+  if (size == old_size)
+    size += clicks > 0 ? 1 : -1;
+  if (size < 1)
+    size = 1;
+  if (size > MAX_ZOOM_CELL_SIZE)
+    size = MAX_ZOOM_CELL_SIZE;
+  if (size == old_size)
+    return false;
+
+  int x = mouse_x - MARGIN;
+  int y = mouse_y - TOOLBAR_HEIGHT;
+  size_t anchor_row = view->first_row + (size_t)(y / old_size);
+  if (anchor_row >= history->count)
+    anchor_row = history->count - 1;
+  view->left_cell += x / old_size - x / size;
+  size_t row_offset = (size_t)(y / size);
+  view->first_row = anchor_row > row_offset ? anchor_row - row_offset : 0;
+  view->cell_size = size;
+  view->manual_zoom = true;
+  view->follow_latest = false;
+  view->horizontal_remainder = view->vertical_remainder = 0;
+  update_viewport(renderer, history, view);
+  return true;
 }
 
 static bool scroll_viewport(SDL_Renderer *renderer, const TapeHistory *history,
@@ -450,6 +494,10 @@ TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machin
           break;
         }
         case SDLK_END:
+          view.manual_zoom = false;
+          view.initialized = false;
+          view.cell_size = MAX_CELL_SIZE;
+          view.zoom_remainder = 0;
           view.follow_latest = true;
           view.horizontal_remainder = view.vertical_remainder = 0;
           dirty = true;
@@ -526,6 +574,12 @@ TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machin
           horizontal = -horizontal;
           vertical = -vertical;
         }
+        if (SDL_GetModState() & KMOD_CTRL) {
+          if (zoom_viewport(renderer, &history, &view, vertical,
+                            event.wheel.mouseX, event.wheel.mouseY))
+            dirty = true;
+          continue;
+        }
         if (SDL_GetModState() & KMOD_SHIFT) {
           horizontal -= vertical;
           vertical = 0;
@@ -540,7 +594,8 @@ TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machin
         credit = 0;
         if (stopped == NULL)
           stopped = advance(&history, machine);
-        view.follow_latest = true;
+        if (!view.manual_zoom)
+          view.follow_latest = true;
         view.horizontal_remainder = view.vertical_remainder = 0;
         dirty = true;
       }

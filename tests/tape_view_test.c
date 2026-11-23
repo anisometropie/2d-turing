@@ -240,6 +240,57 @@ void it_should_shrink_in_larger_steps_to_keep_all_rows_visible(void) {
   assert(strstr(title, "cell 15 | left -33") != NULL);
 }
 
+static void queue_ctrl_wheel(float amount) {
+  SDL_SetModState(KMOD_CTRL);
+  SDL_Event event = {.type = SDL_MOUSEWHEEL};
+  event.wheel.preciseY = amount;
+  event.wheel.mouseX = 512;
+  event.wheel.mouseY = 84;
+  SDL_PushEvent(&event);
+}
+
+void it_should_zoom_in_around_the_mouse_and_keep_zoom_when_stepping(void) {
+  const TuringMachine *machine = turing_init("1RA1RA", false);
+  queue_ctrl_wheel(1);
+  queue_steps(1);
+  close_after_first_frame();
+  tape_view_run(renderer, machine, false, 24);
+  SDL_SetModState(KMOD_NONE);
+
+  const char *title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "cell 25 | left -8") != NULL);
+  assert(strstr(title, "HISTORY") != NULL);
+  assert(machine->head == 25);
+  // Logical cell 12 remains under x=512: -13+500/20 == -8+500/25.
+}
+
+void it_should_zoom_out_with_ctrl_wheel_down(void) {
+  const TuringMachine *machine = turing_init("1RA1RA", false);
+  queue_ctrl_wheel(-1);
+  close_after_first_frame();
+  tape_view_run(renderer, machine, false, 24);
+  SDL_SetModState(KMOD_NONE);
+
+  const char *title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "cell 16 | left -19") != NULL);
+  assert(machine->head == 24);
+}
+
+void it_should_restore_automatic_fitting_with_end(void) {
+  const TuringMachine *machine = turing_init("1RA1RA", false);
+  queue_ctrl_wheel(1);
+  SDL_Event event = {.type = SDL_KEYDOWN};
+  event.key.keysym.sym = SDLK_END;
+  SDL_PushEvent(&event);
+  close_after_first_frame();
+  tape_view_run(renderer, machine, false, 24);
+  SDL_SetModState(KMOD_NONE);
+
+  const char *title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "cell 20 | left -13") != NULL);
+  assert(strstr(title, "LIVE") != NULL);
+}
+
 int main(void) {
   SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
   SDL_Init(SDL_INIT_VIDEO);
@@ -260,6 +311,9 @@ int main(void) {
   it_should_wait_until_near_the_right_edge_before_fitting();
   it_should_fit_when_near_the_left_edge();
   it_should_shrink_in_larger_steps_to_keep_all_rows_visible();
+  it_should_zoom_in_around_the_mouse_and_keep_zoom_when_stepping();
+  it_should_zoom_out_with_ctrl_wheel_down();
+  it_should_restore_automatic_fitting_with_end();
 
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);

@@ -24,6 +24,8 @@ Scroll the mouse wheel to browse earlier rows. While browsing, the row position,
 horizontal alignment, and zoom stay fixed as new steps run. Shift+wheel pans
 horizontally. Home shows the earliest page; End returns to the live view and
 resumes automatic fitting. All rows are retained until you close the window.
+Ctrl+mouse wheel zooms in or out around the pointer over the tape. Manual zoom
+stays fixed while stepping or running; press End to restore automatic fitting.
 The toolbar and title show the speed, step, state, and head position. The tape
 grows automatically in either direction. History stores each step's change
 instead of copying the entire tape; its memory usage still grows with the number
