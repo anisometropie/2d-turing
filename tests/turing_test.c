@@ -70,9 +70,26 @@ void more_steps(void) {
   assert(machine->state == 'H');
 }
 
+void step_should_execute_state_c_instruction(void) {
+  const TuringMachine *machine = turing_init("1RB0RB_1RC0RC_0LA1RH", false);
+
+  step();
+  assert(machine->state == 'B');
+
+  step();
+  assert(machine->head == 2);
+  assert(machine->state == 'C');
+
+  step();
+  assert(machine->tape[2] == 0);
+  assert(machine->head == 1);
+  assert(machine->state == 'A');
+}
+
 int main(void) {
   it_should_initialise_turing_machine_and_store_instructions();
   step_should_execute_one_instruction();
   more_steps();
+  step_should_execute_state_c_instruction();
   return 0;
 }

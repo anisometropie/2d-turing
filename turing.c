@@ -7,10 +7,7 @@ static int capacity = 1024;
 static TuringMachine machine;
 
 void step() {
-  int offset = 0;
-  if (machine.state == 'B') {
-    offset += 7;
-  }
+  int offset = (machine.state - 'A') * 7;
   if (machine.tape[machine.head] == 1) {
     offset += 3;
   }
