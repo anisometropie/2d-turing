@@ -103,11 +103,33 @@ void halted_machine_should_do_nothing() {
   assert(machine->state == 'H');
 }
 
+void step_should_grow_tape_at_right_boundary(void) {
+  const TuringMachine *machine = turing_init("1RA1RA", false);
+  size_t initial_capacity = machine->capacity;
+
+  // The initial tape runs from -512 to 511.
+  for (int i = 0; i < 511; i++) {
+    step();
+  }
+
+  assert(machine->head == 511);
+  assert(machine->capacity == initial_capacity);
+
+  step();
+
+  assert(machine->head == 512);
+  assert(machine->capacity == 2048);
+  assert(machine->tape[0] == 1);
+  assert(machine->tape[511] == 1);
+  assert(machine->tape[512] == 0);
+}
+
 int main(void) {
   it_should_initialise_turing_machine_and_store_instructions();
   step_should_execute_one_instruction();
   more_steps();
   step_should_execute_state_c_instruction();
   halted_machine_should_do_nothing();
+  step_should_grow_tape_at_right_boundary();
   return 0;
 }

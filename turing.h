@@ -12,6 +12,7 @@ typedef struct {
   char state;
   int64_t head;
   size_t capacity;
+  unsigned char blank_symbol;
 } TuringMachine;
 
 

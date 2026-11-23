@@ -9,9 +9,9 @@ TEST_SUPPORT_SOURCES ?=
 
 all: 2d-turing
 
-2d-turing: main.c window.c window.h square.c square.h turing.c turing.h
+2d-turing: main.c window.c window.h tape_view.c tape_view.h ui_text.c ui_text.h turing.c turing.h digit.h
 	@$(PKG_CONFIG) --exists sdl2 || { echo "SDL2 development files are required (see README.md)" >&2; exit 1; }
-	$(CC) $(CFLAGS) $(SDL_CFLAGS) main.c window.c square.c turing.c -o $@ $(SDL_LIBS)
+	$(CC) $(CFLAGS) $(SDL_CFLAGS) main.c window.c tape_view.c ui_text.c turing.c -o $@ $(SDL_LIBS) -lm
 
 build/tests/%_test: tests/%_test.c %.c $(TEST_SUPPORT_SOURCES) $(wildcard *.h tests/*.h) Makefile
 	@mkdir -p build/tests
