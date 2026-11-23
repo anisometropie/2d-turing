@@ -7,9 +7,11 @@ Install SDL2 development headers and `pkg-config` first (on Debian or Ubuntu:
 `./2d-turing`. Black squares represent 1 and white squares represent 0.
 The first row is the initial tape; each step adds a row underneath it. The head
 on the last visible row has a red outline. Columns line up across the history.
-Cells automatically shrink to fit more rows and the visited tape range. At one
-pixel per cell, the view follows the newest rows; older steps remain available
-by scrolling.
+Columns and cell size stay fixed between steps. When the history approaches a
+side or the bottom edge, cells shrink in larger increments to keep the whole
+history visible and leave room for more steps. At one pixel per cell, the view
+follows the newest rows and pans only when the head nears a side; older steps
+remain available by scrolling.
 
 The machine starts paused, with no fixed step limit when running. Drag the speed
 slider from 1 to 10,000 steps per second. Execution runs in batches so the UI

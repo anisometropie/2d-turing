@@ -35,6 +35,7 @@ typedef struct {
   size_t first_row;
   int64_t left_cell;
   int cell_size;
+  bool initialized;
   bool follow_latest;
   double horizontal_remainder;
   double vertical_remainder;
@@ -151,21 +152,45 @@ static void update_viewport(SDL_Renderer *renderer, const TapeHistory *history,
     return;
 
   if (view->follow_latest) {
-    int size = MAX_CELL_SIZE;
-    size_t span = (size_t)(history->maximum_head - history->minimum_head) + 9;
-    if (history->count > (size_t)(usable_height / size))
-      size = (int)((size_t)usable_height / history->count);
-    if (size < 1)
-      size = 1;
-    if (span > (size_t)(usable_width / size))
-      size = (int)((size_t)usable_width / span);
-    view->cell_size = size < 1 ? 1 : size;
+    int size = view->cell_size;
+    int columns = usable_width / size;
+    int margin = columns / 10;
+    if (margin < 1)
+      margin = 1;
+    int64_t head = history->rows[history->count - 1].head;
+    bool near_side = size > 1
+      ? history->minimum_head - view->left_cell < margin ||
+        history->maximum_head - view->left_cell >= columns - margin
+      : head - view->left_cell < margin || head - view->left_cell >= columns - margin;
+    bool near_bottom = history->count > (size_t)((usable_height * 9 / 10) / size);
+    bool fit = !view->initialized;
 
-    int columns = usable_width / view->cell_size;
-    int64_t center = history->minimum_head + (history->maximum_head - history->minimum_head) / 2;
-    if (span > (size_t)columns)
-      center = history->rows[history->count - 1].head;
-    view->left_cell = center - columns / 2;
+    if (view->initialized && size > 1 && (near_side || near_bottom)) {
+      // Leave breathing room so the next step does not immediately resize again.
+      size = size * 3 / 4;
+      if (size < 1)
+        size = 1;
+      fit = true;
+    }
+    size_t span = (size_t)(history->maximum_head - history->minimum_head) + 9;
+    if (fit) {
+      if (history->count > (size_t)((usable_height * 9 / 10) / size))
+        size = (int)((size_t)(usable_height * 9 / 10) / history->count);
+      if (size < 1)
+        size = 1;
+      if (span > (size_t)((usable_width * 8 / 10) / size))
+        size = (int)((size_t)(usable_width * 8 / 10) / span);
+      view->cell_size = size < 1 ? 1 : size;
+      columns = usable_width / view->cell_size;
+      int64_t center = history->minimum_head + (history->maximum_head - history->minimum_head) / 2;
+      if (span > (size_t)columns)
+        center = head;
+      view->left_cell = center - columns / 2;
+      view->initialized = true;
+    } else if (size == 1 && near_side) {
+      // Once zoomed all the way out, pan only when the head nears an edge.
+      view->left_cell = head - columns / 2;
+    }
   }
 
   size_t visible = (size_t)(usable_height / view->cell_size);
@@ -385,6 +410,7 @@ TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machin
   const char *stopped = machine->state == 'H' ? "HALTED" : NULL;
   for (size_t i = 0; i < initial_steps && stopped == NULL; i++)
     stopped = advance(&history, machine);
+  update_viewport(renderer, &history, &view);
   double slider = log(60.0) / log(MAX_SPEED);
   int speed = 60;
   double credit = 0;
@@ -464,6 +490,7 @@ TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machin
           history.rows[0] = (TapeRow){.head = machine->head, .state = machine->state};
           history.minimum_head = history.maximum_head = machine->head;
           view = (TapeViewport){.cell_size = MAX_CELL_SIZE, .follow_latest = true};
+          update_viewport(renderer, &history, &view);
           paused = true;
           dragging = false;
           credit = 0;

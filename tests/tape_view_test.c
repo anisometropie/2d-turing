@@ -183,6 +183,63 @@ void it_should_toggle_play_and_pause(void) {
   assert(strstr(title, "PAUSED") != NULL);
 }
 
+static void queue_steps(int count) {
+  SDL_Event event = {.type = SDL_KEYDOWN};
+  event.key.keysym.sym = SDLK_RIGHT;
+  for (int i = 0; i < count; i++)
+    SDL_PushEvent(&event);
+}
+
+void it_should_keep_earlier_heads_in_place_while_stepping(void) {
+  const TuringMachine *machine = turing_init("1RA0LA", false);
+  click_head_trail();
+  queue_steps(2);
+  close_after_first_frame();
+  tape_view_run(renderer, machine, false, 0);
+
+  // Cell 0 starts at x=512 and must stay there when steps 1 and 2 are added.
+  assert(pixel_at(512, 84) == 0xffdc4123);
+  assert(pixel_at(532, 104) == 0xffdc4123);
+  assert(pixel_at(552, 124) == 0xffdc4123);
+}
+
+void it_should_wait_until_near_the_right_edge_before_fitting(void) {
+  const TuringMachine *machine = turing_init("1RA1RA", false);
+  queue_steps(18);
+  close_after_first_frame();
+  tape_view_run(renderer, machine, false, 0);
+  const char *title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "cell 20 | left -25") != NULL);
+
+  machine = turing_init("1RA1RA", false);
+  queue_steps(20);
+  close_after_first_frame();
+  tape_view_run(renderer, machine, false, 0);
+  title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "rows 0-20") != NULL);
+  assert(strstr(title, "cell 15 | left -23") != NULL);
+}
+
+void it_should_fit_when_near_the_left_edge(void) {
+  const TuringMachine *machine = turing_init("1LA1LA", false);
+  queue_steps(21);
+  close_after_first_frame();
+  tape_view_run(renderer, machine, false, 0);
+  const char *title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "rows 0-21") != NULL);
+  assert(strstr(title, "cell 15 | left -44") != NULL);
+}
+
+void it_should_shrink_in_larger_steps_to_keep_all_rows_visible(void) {
+  const TuringMachine *machine = turing_init("1RB1RB_0LA0LA", false);
+  queue_steps(30);
+  close_after_first_frame();
+  tape_view_run(renderer, machine, false, 0);
+  const char *title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "rows 0-30") != NULL);
+  assert(strstr(title, "cell 15 | left -33") != NULL);
+}
+
 int main(void) {
   SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
   SDL_Init(SDL_INIT_VIDEO);
@@ -199,6 +256,10 @@ int main(void) {
   it_should_show_the_head_on_each_row_when_checked();
   it_should_hide_past_heads_when_unchecked();
   it_should_toggle_play_and_pause();
+  it_should_keep_earlier_heads_in_place_while_stepping();
+  it_should_wait_until_near_the_right_edge_before_fitting();
+  it_should_fit_when_near_the_left_edge();
+  it_should_shrink_in_larger_steps_to_keep_all_rows_visible();
 
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
