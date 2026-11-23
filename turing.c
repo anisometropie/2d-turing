@@ -6,7 +6,10 @@
 static int capacity = 1024;
 static TuringMachine machine;
 
-void step() {
+StepResult step() {
+  if (machine.state == 'H') {
+    return STEP_HALTED;
+  }
   int offset = (machine.state - 'A') * 7;
   if (machine.tape[machine.head] == 1) {
     offset += 3;
@@ -21,6 +24,10 @@ void step() {
     machine.head -= 1;
   }
   machine.state = machine.instructions[state_index];
+  if (machine.state == 'H') {
+    return STEP_HALTED;
+  }
+  return STEP_RUNNING;
 }
 
 const TuringMachine *turing_init(const char *instructions, bool fill_with_ones) {

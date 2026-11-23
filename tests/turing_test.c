@@ -86,10 +86,28 @@ void step_should_execute_state_c_instruction(void) {
   assert(machine->state == 'A');
 }
 
+void halted_machine_should_do_nothing() {
+  const TuringMachine *machine = turing_init("1RH0RB", false);
+
+  StepResult result = step();
+  assert(result == STEP_HALTED);
+  assert(machine->tape[0] == 1);
+  assert(machine->head == 1);
+  assert(machine->state == 'H');
+
+
+  result = step();
+  assert(result == STEP_HALTED);
+  assert(machine->tape[1] == 0);
+  assert(machine->head == 1);
+  assert(machine->state == 'H');
+}
+
 int main(void) {
   it_should_initialise_turing_machine_and_store_instructions();
   step_should_execute_one_instruction();
   more_steps();
   step_should_execute_state_c_instruction();
+  halted_machine_should_do_nothing();
   return 0;
 }

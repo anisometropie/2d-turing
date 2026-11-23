@@ -17,6 +17,11 @@ typedef struct {
 
 const TuringMachine *turing_init(const char *instructions, bool fill_with_ones);
 const TuringMachine *turing_init_with_state(const char *instructions, bool fill_with_ones, char starting_state);
-void step();
+typedef enum {
+  STEP_RUNNING,
+  STEP_HALTED
+} StepResult;
+
+StepResult step(void);
 
 #endif
