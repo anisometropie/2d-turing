@@ -112,6 +112,10 @@ static SDL_Rect step_button(int width) {
   return (SDL_Rect){width - MARGIN - 68, 6, 68, 24};
 }
 
+static SDL_Rect back_button(void) {
+  return (SDL_Rect){MARGIN + 36, 50, 88, 16};
+}
+
 static double slider_position(int x, int width) {
   SDL_Rect track = speed_track(width);
   double position = (double)(x - track.x) / track.w;
@@ -196,7 +200,7 @@ static bool scroll_viewport(SDL_Renderer *renderer, const TapeHistory *history,
 static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
                          const TapeHistory *history, TapeCanvas *canvas,
                          TapeViewport *view, bool paused, const char *stopped,
-                         double slider, int speed) {
+                         double slider, int speed, bool from_grid) {
   update_viewport(renderer, history, view);
   int width;
   int height;
@@ -290,6 +294,14 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
   ui_text(renderer, MARGIN, 12, label, 2);
   ui_text(renderer, MARGIN, 54, "1", 1);
   ui_text(renderer, width - MARGIN - 30, 54, "10000", 1);
+  if (from_grid) {
+    SDL_Rect back = back_button();
+    SDL_SetRenderDrawColor(renderer, 50, 100, 180, 255);
+    SDL_RenderFillRect(renderer, &back);
+    SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+    ui_text(renderer, back.x + 10, back.y + 4, "BACK TO GRID", 1);
+    SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+  }
   const char *status = stopped ? stopped : paused ? "PAUSED" : "RUNNING";
   int status_x = button.x - 12 - (int)strlen(status) * 12;
   if (status_x > MARGIN + (int)strlen(label) * 12 + 12)
@@ -303,21 +315,22 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
   SDL_Window *window = SDL_RenderGetWindow(renderer);
   if (window != NULL) {
     snprintf(label, sizeof label,
-             "Tape | rows %zu-%zu | step %zu/%zu | state %c | head %" PRId64
+             "Tape %s | rows %zu-%zu | step %zu/%zu | state %c | head %" PRId64
              " | %s | %d steps/s | cell %d | left %" PRId64 " | %s | End: live",
-             first, end - 1, end - 1, history->count - 1, selected->state, selected->head,
+             machine->instructions, first, end - 1, end - 1, history->count - 1, selected->state, selected->head,
              status, speed, cell_size, left, view->follow_latest ? "LIVE" : "HISTORY");
     SDL_SetWindowTitle(window, label);
   }
   return true;
 }
 
-int tape_view_run(SDL_Renderer *renderer, const TuringMachine *machine) {
+TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machine,
+                             bool from_grid) {
   TapeHistory history = {0};
   TapeCanvas canvas = {0};
   TapeViewport view = {.cell_size = MAX_CELL_SIZE, .follow_latest = true};
   if (!reserve_row(&history))
-    return 1;
+    return TAPE_VIEW_ERROR;
   history.rows[history.count++] = (TapeRow){.head = machine->head, .state = machine->state};
   history.minimum_head = history.maximum_head = machine->head;
   SDL_Window *window = SDL_RenderGetWindow(renderer);
@@ -334,11 +347,11 @@ int tape_view_run(SDL_Renderer *renderer, const TuringMachine *machine) {
   double credit = 0;
   Uint64 previous_frame = SDL_GetPerformanceCounter();
   double frequency = (double)SDL_GetPerformanceFrequency();
-  int result = 0;
+  TapeViewResult result = TAPE_VIEW_EXIT;
 
   while (running) {
     SDL_Event event;
-    while (SDL_PollEvent(&event)) {
+    while (running && SDL_PollEvent(&event)) {
       bool step_requested = false;
       if (event.type == SDL_QUIT) {
         running = false;
@@ -346,6 +359,7 @@ int tape_view_run(SDL_Renderer *renderer, const TuringMachine *machine) {
         switch (event.key.keysym.sym) {
         case SDLK_ESCAPE:
           running = false;
+          result = TAPE_VIEW_BACK;
           break;
         case SDLK_SPACE:
           paused = !paused;
@@ -377,6 +391,12 @@ int tape_view_run(SDL_Renderer *renderer, const TuringMachine *machine) {
         SDL_GetRendererOutputSize(renderer, &width, NULL);
         SDL_Rect button = step_button(width);
         SDL_Point mouse = {event.button.x, event.button.y};
+        SDL_Rect back = back_button();
+        if (from_grid && SDL_PointInRect(&mouse, &back)) {
+          result = TAPE_VIEW_BACK;
+          running = false;
+          break;
+        }
         step_requested = stopped == NULL && SDL_PointInRect(&mouse, &button);
         dragging = !step_requested && event.button.y >= 30 && event.button.y <= 56;
         if (dragging) {
@@ -447,9 +467,9 @@ int tape_view_run(SDL_Renderer *renderer, const TuringMachine *machine) {
     }
     if (dirty) {
       if (!draw_history(renderer, machine, &history, &canvas,
-                        &view, paused, stopped, slider, speed)) {
+                        &view, paused, stopped, slider, speed, from_grid)) {
         fprintf(stderr, "Could not render tape history: %s\n", SDL_GetError());
-        result = 1;
+        result = TAPE_VIEW_ERROR;
         break;
       }
       dirty = false;

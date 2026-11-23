@@ -33,6 +33,34 @@ To visualize another machine, pass its instructions on the command line:
 
 Press Escape or use the close button to exit. Use `make clean` to remove the executable.
 
+## Machine galleries
+
+Run `./2d-turing --one-state` for an 8 by 8 grid of all 64 rule tables. Each
+transition can write 0 or 1, move left or right, and return to A or halt at H:
+8 choices for each of the two symbols, giving 64 machines. H is not counted as
+a working state. Mirror images and rules with identical behaviour are included.
+
+Each tile shows its instructions and the first 24 steps on a zero-filled tape,
+or stops earlier if it halts. Black is 1, white is 0, and red marks the head on
+each row. Click a tile to open the normal viewer, starting paused at step 0.
+Use Step or Space to explore it further; click Back to Grid or press Escape to
+return. Closing the window exits the application.
+
+Many previews are identical: on a blank tape, a one-state machine either halts
+after one step or keeps moving in one direction into untouched zeros. Its rule
+for reading 1 is never reached. Rows share the rule for 0; columns vary the rule
+for 1.
+
+Run `./2d-turing --two-state` for all 20,736 two-state rule tables. With working
+states A and B plus halt H, each of the four rules has 12 choices, giving
+12^4 machines. These include rules where B is never reached.
+
+The two-state gallery has 324 pages of 64 previews. Use First/Prev/Next/Last,
+Page Up/Page Down (or Left/Right), and Home/End to browse. Returning from a
+machine keeps the current page. The 1 State and 2 States buttons switch galleries.
+Each preview stops at 24 steps or halt; a 24-step preview does not establish
+whether the machine eventually halts. Open a tile to run it further.
+
 ## Unit tests
 
 Run `make test` once, or `make watch-test` to rerun tests whenever you save a C
