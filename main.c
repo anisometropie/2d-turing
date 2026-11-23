@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
       fprintf(stderr, "Usage: %s --states <positive state count>\n", argv[0]);
       return 1;
     }
-  } else if (argc > 1 && argv[1][0] == '-') {
+  } else if (argc > 1 && argv[1][0] == '-' && strncmp(argv[1], "---", 3) != 0) {
     fprintf(stderr, "Unknown option: %s. Use --states <positive state count>.\n", argv[1]);
     return 1;
   }

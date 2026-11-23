@@ -160,7 +160,45 @@ void step_should_report_an_undefined_multi_letter_state(void) {
   assert(machine->tape[1] == 0);
 }
 
+void step_should_halt_on_an_undefined_bbchallenge_transition(void) {
+  const char *instructions = "1RB1RA_0LC1LE_1LD1LC_1LA0LB_1LF1RE_---0RA";
+  const TuringMachine *machine = turing_init_with_state(instructions, false, 'F');
+
+  assert(turing_can_step());
+  assert(step() == STEP_HALTED);
+  assert(machine->state == 'H');
+  assert(machine->head == 0);
+  assert(machine->tape[0] == 0);
+  assert(step() == STEP_HALTED);
+  assert(machine->head == 0);
+}
+
+void step_should_keep_the_rule_beside_an_undefined_transition(void) {
+  const char *instructions = "1RB1RA_0LC1LE_1LD1LC_1LA0LB_1LF1RE_---0RA";
+  const TuringMachine *machine = turing_init_with_state(instructions, true, 'F');
+
+  assert(step() == STEP_RUNNING);
+  assert(machine->state == 'A');
+  assert(machine->head == 1);
+  assert(machine->tape[0] == 0);
+}
+
+void step_should_accept_undefined_rules_in_either_slot(void) {
+  const TuringMachine *machine = turing_init("1RA---", true);
+  assert(step() == STEP_HALTED);
+  assert(machine->head == 0);
+  assert(machine->tape[0] == 1);
+
+  machine = turing_init("------", false);
+  assert(step() == STEP_HALTED);
+  assert(machine->head == 0);
+  assert(machine->tape[0] == 0);
+}
+
 int main(void) {
+  step_should_halt_on_an_undefined_bbchallenge_transition();
+  step_should_keep_the_rule_beside_an_undefined_transition();
+  step_should_accept_undefined_rules_in_either_slot();
   step_should_report_an_undefined_multi_letter_state();
   step_should_execute_a_multi_letter_state();
   step_should_use_i_as_the_eighth_working_state();

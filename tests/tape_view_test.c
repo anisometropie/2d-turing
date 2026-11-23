@@ -308,6 +308,19 @@ void it_should_display_and_restart_a_multi_letter_starting_state(void) {
   assert(strstr(title, "step 0/0") != NULL);
 }
 
+void it_should_show_undefined_transitions_as_halted(void) {
+  const TuringMachine *machine = turing_init("---0RA", false);
+  close_after_first_frame();
+  tape_view_run(renderer, machine, false, 1);
+
+  assert(machine->state == 'H');
+  assert(machine->head == 0);
+  assert(machine->tape[0] == 0);
+  const char *title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "HALTED") != NULL);
+  assert(strstr(title, "MISSING TRANSITION") == NULL);
+}
+
 int main(void) {
   SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
   SDL_Init(SDL_INIT_VIDEO);
@@ -332,6 +345,7 @@ int main(void) {
   it_should_zoom_out_with_ctrl_wheel_down();
   it_should_restore_automatic_fitting_with_end();
   it_should_display_and_restart_a_multi_letter_starting_state();
+  it_should_show_undefined_transitions_as_halted();
 
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);

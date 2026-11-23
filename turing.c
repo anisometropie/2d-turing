@@ -24,6 +24,17 @@ static Transition *parse_instructions(const char *instructions, size_t count) {
   for (size_t state = 0; state < count; state++) {
     bool valid = true;
     for (int symbol = 0; symbol < 2; symbol++) {
+      if (strncmp(cursor, "---", 3) == 0) {
+        // Undefined rules halt without changing the tape or moving the head.
+        parsed[state * 2 + symbol] = (Transition){
+          .symbol = (unsigned char)symbol,
+          .direction = 0,
+          .next_state = 'H',
+          .valid = true
+        };
+        cursor += 3;
+        continue;
+      }
       if ((*cursor != '0' && *cursor != '1') ||
           (cursor[1] != 'L' && cursor[1] != 'R')) {
         valid = false;

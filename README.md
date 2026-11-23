@@ -38,6 +38,13 @@ To visualize another machine, pass its instructions on the command line:
 ./2d-turing '1RB1RH_0RC1RB_1LC1LA'
 ```
 
+The bbchallenge `---` notation is also accepted: encountering it halts without
+writing or moving the head. For example:
+
+```sh
+./2d-turing '1RB1RA_0LC1LE_1LD1LC_1LA0LB_1LF1RE_---0RA'
+```
+
 Press Escape or use the close button to exit. Use `make clean` to remove the executable.
 
 ## Machine galleries
