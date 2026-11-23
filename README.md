@@ -15,6 +15,7 @@ The machine starts paused, with no fixed step limit when running. Drag the speed
 slider from 1 to 10,000 steps per second. Execution runs in batches so the UI
 remains responsive at high speeds. Press Space to pause or resume. Click Step or
 press Right Arrow to pause and take one step.
+Click Restart to reset the selected machine and its history to step 0, paused.
 Scroll the mouse wheel to browse earlier rows. While browsing, the row position,
 horizontal alignment, and zoom stay fixed as new steps run. Shift+wheel pans
 horizontally. Home shows the earliest page; End returns to the live view and

@@ -116,6 +116,10 @@ static SDL_Rect back_button(void) {
   return (SDL_Rect){MARGIN + 36, 50, 88, 16};
 }
 
+static SDL_Rect restart_button(void) {
+  return (SDL_Rect){MARGIN + 136, 50, 64, 16};
+}
+
 static double slider_position(int x, int width) {
   SDL_Rect track = speed_track(width);
   double position = (double)(x - track.x) / track.w;
@@ -294,6 +298,12 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
   ui_text(renderer, MARGIN, 12, label, 2);
   ui_text(renderer, MARGIN, 54, "1", 1);
   ui_text(renderer, width - MARGIN - 30, 54, "10000", 1);
+  SDL_Rect restart = restart_button();
+  SDL_SetRenderDrawColor(renderer, 50, 100, 180, 255);
+  SDL_RenderFillRect(renderer, &restart);
+  SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
+  ui_text(renderer, restart.x + 10, restart.y + 4, "RESTART", 1);
+  SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
   if (from_grid) {
     SDL_Rect back = back_button();
     SDL_SetRenderDrawColor(renderer, 50, 100, 180, 255);
@@ -327,6 +337,7 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
 TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machine,
                              bool from_grid, size_t initial_steps) {
   TapeHistory history = {0};
+  char initial_state = machine->state;
   TapeCanvas canvas = {0};
   TapeViewport view = {.cell_size = MAX_CELL_SIZE, .follow_latest = true};
   if (!reserve_row(&history))
@@ -394,10 +405,25 @@ TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machin
         SDL_Rect button = step_button(width);
         SDL_Point mouse = {event.button.x, event.button.y};
         SDL_Rect back = back_button();
+        SDL_Rect restart = restart_button();
         if (from_grid && SDL_PointInRect(&mouse, &back)) {
           result = TAPE_VIEW_BACK;
           running = false;
           break;
+        }
+        if (SDL_PointInRect(&mouse, &restart)) {
+          machine = turing_init_with_state(machine->instructions, machine->blank_symbol,
+                                           initial_state);
+          history.count = 1;
+          history.rows[0] = (TapeRow){.head = machine->head, .state = machine->state};
+          history.minimum_head = history.maximum_head = machine->head;
+          view = (TapeViewport){.cell_size = MAX_CELL_SIZE, .follow_latest = true};
+          paused = true;
+          dragging = false;
+          credit = 0;
+          stopped = machine->state == 'H' ? "HALTED" : NULL;
+          dirty = true;
+          continue;
         }
         step_requested = stopped == NULL && SDL_PointInRect(&mouse, &button);
         dragging = !step_requested && event.button.y >= 30 && event.button.y <= 56;
