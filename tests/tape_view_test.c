@@ -114,6 +114,50 @@ void it_should_allow_stepping_after_restarting_a_halted_machine(void) {
   assert(strstr(title, "PAUSED") != NULL);
 }
 
+static void click_head_trail(void) {
+  SDL_Event event = {.type = SDL_MOUSEBUTTONDOWN};
+  event.button.button = SDL_BUTTON_LEFT;
+  event.button.x = 270;
+  event.button.y = 58;
+  SDL_PushEvent(&event);
+}
+
+static Uint32 pixel_at(int x, int y) {
+  SDL_Rect area = {x, y, 1, 1};
+  Uint32 pixel;
+  int result = SDL_RenderReadPixels(renderer, &area, SDL_PIXELFORMAT_ARGB8888,
+                                    &pixel, sizeof pixel);
+  assert(result == 0);
+  return pixel;
+}
+
+void it_should_show_the_head_on_each_row_when_checked(void) {
+  const TuringMachine *machine = turing_init("1RA0LA", false);
+  click_head_trail();
+  close_after_first_frame();
+  tape_view_run(renderer, machine, true, 2);
+
+  // At 1024x768, these are the head borders for steps 0, 1, and 2.
+  assert(pixel_at(492, 84) == 0xffdc4123);
+  assert(pixel_at(512, 104) == 0xffdc4123);
+  assert(pixel_at(532, 124) == 0xffdc4123);
+  assert(machine->head == 2);
+  assert(machine->tape[0] == 1);
+  assert(machine->tape[1] == 1);
+}
+
+void it_should_hide_past_heads_when_unchecked(void) {
+  const TuringMachine *machine = turing_init("1RA0LA", false);
+  click_head_trail();
+  click_head_trail();
+  close_after_first_frame();
+  tape_view_run(renderer, machine, true, 2);
+
+  assert(pixel_at(492, 84) == 0xffffffff);
+  assert(pixel_at(512, 104) == 0xffffffff);
+  assert(pixel_at(532, 124) == 0xffdc4123);
+}
+
 int main(void) {
   SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
   SDL_Init(SDL_INIT_VIDEO);
@@ -127,6 +171,8 @@ int main(void) {
   it_should_still_start_standalone_machines_at_zero();
   it_should_restart_the_selected_machine_and_clear_history();
   it_should_allow_stepping_after_restarting_a_halted_machine();
+  it_should_show_the_head_on_each_row_when_checked();
+  it_should_hide_past_heads_when_unchecked();
 
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);

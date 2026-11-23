@@ -120,6 +120,10 @@ static SDL_Rect restart_button(void) {
   return (SDL_Rect){MARGIN + 136, 50, 64, 16};
 }
 
+static SDL_Rect head_trail_checkbox(void) {
+  return (SDL_Rect){MARGIN + 212, 50, 104, 16};
+}
+
 static double slider_position(int x, int width) {
   SDL_Rect track = speed_track(width);
   double position = (double)(x - track.x) / track.w;
@@ -204,7 +208,7 @@ static bool scroll_viewport(SDL_Renderer *renderer, const TapeHistory *history,
 static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
                          const TapeHistory *history, TapeCanvas *canvas,
                          TapeViewport *view, bool paused, const char *stopped,
-                         double slider, int speed, bool from_grid) {
+                         double slider, int speed, bool from_grid, bool show_head_trail) {
   update_viewport(renderer, history, view);
   int width;
   int height;
@@ -263,12 +267,14 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
       SDL_RenderDrawLine(renderer, MARGIN, y, MARGIN + destination.w - 1, y);
     }
   }
-  int64_t head_column = selected->head - left;
-  if (head_column >= 0 && head_column < columns) {
-    SDL_Rect head = {MARGIN + (int)head_column * cell_size,
-                     TOOLBAR_HEIGHT + (rows - 1) * cell_size, cell_size, cell_size};
-    SDL_SetRenderDrawColor(renderer, 220, 65, 35, 255);
-    SDL_RenderDrawRect(renderer, &head);
+  SDL_SetRenderDrawColor(renderer, 220, 65, 35, 255);
+  for (size_t row = show_head_trail ? first : end - 1; row < end; row++) {
+    int64_t head_column = history->rows[row].head - left;
+    if (head_column >= 0 && head_column < columns) {
+      SDL_Rect head = {MARGIN + (int)head_column * cell_size,
+                       TOOLBAR_HEIGHT + (int)(row - first) * cell_size, cell_size, cell_size};
+      SDL_RenderDrawRect(renderer, &head);
+    }
   }
 
   SDL_Rect toolbar = {0, 0, width, TOOLBAR_HEIGHT};
@@ -304,6 +310,16 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
   SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
   ui_text(renderer, restart.x + 10, restart.y + 4, "RESTART", 1);
   SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+  SDL_Rect checkbox = head_trail_checkbox();
+  SDL_Rect box = {checkbox.x, checkbox.y + 2, 12, 12};
+  SDL_RenderDrawRect(renderer, &box);
+  if (show_head_trail) {
+    SDL_SetRenderDrawColor(renderer, 50, 100, 180, 255);
+    SDL_RenderDrawLine(renderer, box.x + 2, box.y + 6, box.x + 5, box.y + 9);
+    SDL_RenderDrawLine(renderer, box.x + 5, box.y + 9, box.x + 10, box.y + 2);
+  }
+  SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+  ui_text(renderer, checkbox.x + 18, checkbox.y + 4, "HEAD TRAIL", 1);
   if (from_grid) {
     SDL_Rect back = back_button();
     SDL_SetRenderDrawColor(renderer, 50, 100, 180, 255);
@@ -352,6 +368,7 @@ TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machin
   bool paused = true;
   bool dirty = true;
   bool dragging = false;
+  bool show_head_trail = false;
   const char *stopped = machine->state == 'H' ? "HALTED" : NULL;
   for (size_t i = 0; i < initial_steps && stopped == NULL; i++)
     stopped = advance(&history, machine);
@@ -406,6 +423,13 @@ TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machin
         SDL_Point mouse = {event.button.x, event.button.y};
         SDL_Rect back = back_button();
         SDL_Rect restart = restart_button();
+        SDL_Rect checkbox = head_trail_checkbox();
+        if (SDL_PointInRect(&mouse, &checkbox)) {
+          show_head_trail = !show_head_trail;
+          dragging = false;
+          dirty = true;
+          continue;
+        }
         if (from_grid && SDL_PointInRect(&mouse, &back)) {
           result = TAPE_VIEW_BACK;
           running = false;
@@ -495,7 +519,7 @@ TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machin
     }
     if (dirty) {
       if (!draw_history(renderer, machine, &history, &canvas,
-                        &view, paused, stopped, slider, speed, from_grid)) {
+                        &view, paused, stopped, slider, speed, from_grid, show_head_trail)) {
         fprintf(stderr, "Could not render tape history: %s\n", SDL_GetError());
         result = TAPE_VIEW_ERROR;
         break;
