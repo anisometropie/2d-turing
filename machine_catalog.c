@@ -14,9 +14,10 @@ void machine_catalog_preview(int states, int index, MachinePreview *preview) {
     int choice = index % choices;
     index /= choices;
     int offset = (rule / 2) * 7 + (rule % 2) * 3;
-    preview->instructions[offset] = '0' + (choice % 4) / 2;
-    preview->instructions[offset + 1] = choice % 2 ? 'R' : 'L';
-    preview->instructions[offset + 2] = choice / 4 == states ? 'H' : 'A' + choice / 4;
+    int target = choice % (states + 1);
+    preview->instructions[offset] = '0' + choice / (2 * (states + 1));
+    preview->instructions[offset + 1] = (choice / (states + 1)) % 2 ? 'R' : 'L';
+    preview->instructions[offset + 2] = target == states ? 'H' : 'A' + target;
   }
   if (states == 2)
     preview->instructions[6] = '_';

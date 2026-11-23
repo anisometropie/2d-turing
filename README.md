@@ -66,6 +66,11 @@ states A and B plus halt H, each of the four rules has 12 choices, giving
 The two-state gallery has 324 pages of 64 previews. Use First/Prev/Next/Last,
 Page Up/Page Down (or Left/Right), and Home/End to browse. Returning from a
 machine keeps the current page. The 1 State and 2 States buttons switch galleries.
+Enumeration works like a counter: the rightmost character changes fastest.
+Within each rule, the next state changes first (A, B, H for two-state machines),
+then direction (L, R), then the written symbol (0, 1). After a rule rolls over,
+the rule to its left advances. Underscores remain fixed separators.
+
 Each preview stops at 24 steps or halt; a 24-step preview does not establish
 whether the machine eventually halts. Open a tile to run it further.
 

@@ -14,13 +14,13 @@ void it_should_enumerate_64_distinct_machines(void) {
       assert(strcmp(instructions[i], instructions[j]) != 0);
   }
   assert(strcmp(instructions[0], "0LA0LA") == 0);
-  assert(strcmp(instructions[24], "1RA0LA") == 0);
+  assert(strcmp(instructions[48], "1RA0LA") == 0);
   assert(strcmp(instructions[63], "1RH1RH") == 0);
 }
 
 void it_should_preview_a_machine_writing_right(void) {
   MachinePreview preview;
-  machine_catalog_preview(1, 24, &preview); // 1RA0LA
+  machine_catalog_preview(1, 48, &preview); // 1RA0LA
 
   assert(preview.steps == 24);
   assert(preview.halted == false);
@@ -37,7 +37,7 @@ void it_should_preview_a_machine_writing_right(void) {
 
 void it_should_preview_a_machine_writing_left(void) {
   MachinePreview preview;
-  machine_catalog_preview(1, 16, &preview); // 1LA0LA
+  machine_catalog_preview(1, 32, &preview); // 1LA0LA
 
   assert(preview.steps == 24);
   assert(preview.heads[24] == -24);
@@ -49,7 +49,7 @@ void it_should_preview_a_machine_writing_left(void) {
 
 void it_should_stop_a_preview_on_halt(void) {
   MachinePreview preview;
-  machine_catalog_preview(1, 48, &preview); // 1LH0LA
+  machine_catalog_preview(1, 40, &preview); // 1LH0LA
 
   assert(preview.steps == 1);
   assert(preview.halted == true);
@@ -60,7 +60,7 @@ void it_should_stop_a_preview_on_halt(void) {
 
 void it_should_start_each_preview_with_a_fresh_tape(void) {
   MachinePreview preview;
-  machine_catalog_preview(1, 24, &preview);
+  machine_catalog_preview(1, 48, &preview);
   machine_catalog_preview(1, 0, &preview); // 0LA0LA
 
   assert(preview.cells[0][24] == 0);
@@ -92,7 +92,7 @@ void it_should_enumerate_all_two_state_machines(void) {
 
 void it_should_preview_a_transition_through_state_b(void) {
   MachinePreview preview;
-  machine_catalog_preview(2, 12216, &preview); // 1RB0LA_1LH0LA
+  machine_catalog_preview(2, 17376, &preview); // 1RB0LA_1LH0LA
 
   assert(strcmp(preview.instructions, "1RB0LA_1LH0LA") == 0);
   assert(preview.steps == 2);
@@ -104,7 +104,28 @@ void it_should_preview_a_transition_through_state_b(void) {
   assert(preview.cells[2][25] == 1);
 }
 
+void it_should_increment_the_rightmost_character_first(void) {
+  const char *expected[] = {
+    "0LA0LA_0LA0LA", "0LA0LA_0LA0LB", "0LA0LA_0LA0LH",
+    "0LA0LA_0LA0RA", "0LA0LA_0LA0RB", "0LA0LA_0LA0RH",
+    "0LA0LA_0LA1LA", "0LA0LA_0LA1LB", "0LA0LA_0LA1LH",
+    "0LA0LA_0LA1RA", "0LA0LA_0LA1RB", "0LA0LA_0LA1RH"
+  };
+  MachinePreview preview;
+  for (int i = 0; i < 12; i++) {
+    machine_catalog_preview(2, i, &preview);
+    assert(strcmp(preview.instructions, expected[i]) == 0);
+  }
+  machine_catalog_preview(2, 12, &preview);
+  assert(strcmp(preview.instructions, "0LA0LA_0LB0LA") == 0);
+  machine_catalog_preview(2, 144, &preview);
+  assert(strcmp(preview.instructions, "0LA0LB_0LA0LA") == 0);
+  machine_catalog_preview(2, 1728, &preview);
+  assert(strcmp(preview.instructions, "0LB0LA_0LA0LA") == 0);
+}
+
 int main(void) {
+  it_should_increment_the_rightmost_character_first();
   it_should_enumerate_all_two_state_machines();
   it_should_preview_a_transition_through_state_b();
   it_should_enumerate_64_distinct_machines();
