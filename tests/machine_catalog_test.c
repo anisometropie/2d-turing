@@ -104,6 +104,45 @@ void it_should_preview_a_transition_through_state_b(void) {
   assert(preview.cells[2][25] == 1);
 }
 
+void it_should_jump_to_the_next_leftmost_three_symbols(void) {
+  int next = machine_catalog_jump(2, 64, 3, 1);
+  assert(next == 1728);
+  MachinePreview preview;
+  machine_catalog_preview(2, next, &preview);
+  assert(strcmp(preview.instructions, "0LB0LA_0LA0LA") == 0);
+  assert(machine_catalog_jump(2, next, 3, 1) == 3456);
+  assert(machine_catalog_jump(2, next, 3, -1) == 0);
+}
+
+void it_should_jump_to_the_next_leftmost_six_symbols(void) {
+  int next = machine_catalog_jump(2, 64, 6, 1);
+  assert(next == 144);
+  MachinePreview preview;
+  machine_catalog_preview(2, next, &preview);
+  assert(strcmp(preview.instructions, "0LA0LB_0LA0LA") == 0);
+  // The group begins inside page 3, not at the page's first machine (128).
+  assert(next / 64 == 2);
+  assert(machine_catalog_jump(2, next, 6, 1) == 288);
+  assert(machine_catalog_jump(2, 288, 6, -1) == 144);
+  assert(machine_catalog_jump(2, next, 6, -1) == 0);
+}
+
+void it_should_stop_group_jumps_at_both_ends(void) {
+  assert(machine_catalog_jump(2, 0, 3, -1) == -1);
+  assert(machine_catalog_jump(2, 64, 6, -1) == -1);
+  assert(machine_catalog_jump(2, 19008, 3, 1) == -1);
+  assert(machine_catalog_jump(2, 20592, 6, 1) == -1);
+  assert(machine_catalog_jump(2, 20735, 6, 1) == -1);
+}
+
+void it_should_jump_between_groups_on_the_one_state_page(void) {
+  assert(machine_catalog_jump(1, 0, 3, 1) == 8);
+  assert(machine_catalog_jump(1, 8, 3, -1) == 0);
+  assert(machine_catalog_jump(1, 0, 6, 1) == 1);
+  assert(machine_catalog_jump(1, 1, 6, -1) == 0);
+  assert(machine_catalog_jump(1, 63, 6, 1) == -1);
+}
+
 void it_should_increment_the_rightmost_character_first(void) {
   const char *expected[] = {
     "0LA0LA_0LA0LA", "0LA0LA_0LA0LB", "0LA0LA_0LA0LH",
@@ -126,6 +165,10 @@ void it_should_increment_the_rightmost_character_first(void) {
 
 int main(void) {
   it_should_increment_the_rightmost_character_first();
+  it_should_jump_to_the_next_leftmost_three_symbols();
+  it_should_jump_to_the_next_leftmost_six_symbols();
+  it_should_stop_group_jumps_at_both_ends();
+  it_should_jump_between_groups_on_the_one_state_page();
   it_should_enumerate_all_two_state_machines();
   it_should_preview_a_transition_through_state_b();
   it_should_enumerate_64_distinct_machines();

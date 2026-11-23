@@ -7,6 +7,15 @@ int machine_catalog_count(int states) {
   return states == 1 ? 64 : 20736;
 }
 
+int machine_catalog_jump(int states, int index, int prefix_symbols, int direction) {
+  int count = machine_catalog_count(states);
+  int group_size = count;
+  for (int rule = 0; rule < prefix_symbols / 3; rule++)
+    group_size /= 4 * (states + 1);
+  int next = (index / group_size + direction) * group_size;
+  return next >= 0 && next < count ? next : -1;
+}
+
 void machine_catalog_preview(int states, int index, MachinePreview *preview) {
   *preview = (MachinePreview){0};
   int choices = 4 * (states + 1);

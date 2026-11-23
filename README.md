@@ -66,6 +66,13 @@ states A and B plus halt H, each of the four rules has 12 choices, giving
 The two-state gallery has 324 pages of 64 previews. Use First/Prev/Next/Last,
 Page Up/Page Down (or Left/Right), and Home/End to browse. Returning from a
 machine keeps the current page. The 1 State and 2 States buttons switch galleries.
+The compact previous/next groups are `-6 -3 -1` and `+1 +3 +6`. The 1 buttons
+move one page. The 3 and 6 buttons jump to the first machine in the next or
+previous group sharing those leftmost characters. The destination page opens
+and that machine gets a blue outline. Further jumps use the highlighted machine,
+including when a group begins partway through a page. Clicking a tile also selects
+it. Group jumps work within the single page of one-state machines too.
+
 Enumeration works like a counter: the rightmost character changes fastest.
 Within each rule, the next state changes first (A, B, H for two-state machines),
 then direction (L, R), then the written symbol (0, 1). After a rule rolls over,

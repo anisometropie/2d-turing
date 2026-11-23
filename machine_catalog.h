@@ -18,6 +18,9 @@ typedef struct {
 
 // Supports one or two working states, plus halt H.
 int machine_catalog_count(int states);
+// Jump to the first machine in the next/previous group sharing a left prefix.
+// prefix_symbols is 3 or 6; direction is +1 or -1. Return -1 at either end.
+int machine_catalog_jump(int states, int index, int prefix_symbols, int direction);
 // Index must be less than the count. Each preview starts on a fresh zero tape.
 void machine_catalog_preview(int states, int index, MachinePreview *preview);
 
