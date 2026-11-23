@@ -380,13 +380,18 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
   ui_text(renderer, pause.x + 10, pause.y + 5, paused ? "PLAY" : "PAUSE", 2);
 
   char label[256];
-  SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
-  snprintf(label, sizeof label, "SPEED %d STEPS/S", speed);
-  int label_scale = width < 640 ? 1 : 2;
-  ui_text(renderer, MARGIN, 12, label, label_scale);
-  ui_text(renderer, MARGIN, 54, "1", 1);
-  ui_text(renderer, width - MARGIN - 30, 54, "10000", 1);
   SDL_Rect restart = restart_button(width);
+  SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
+  int name_space = restart.x - MARGIN - 12;
+  int name_scale = (int)strlen(machine->instructions) * 12 <= name_space ? 2 : 1;
+  int name_width = (int)strlen(machine->instructions) * 6 * name_scale;
+  SDL_Rect name_area = {MARGIN, 6, name_space, 24};
+  SDL_RenderSetClipRect(renderer, &name_area);
+  ui_text(renderer, MARGIN, 12, machine->instructions, name_scale);
+  SDL_RenderSetClipRect(renderer, NULL);
+  ui_text(renderer, MARGIN, 54, "1", 1);
+  snprintf(label, sizeof label, "%d STEPS/S", speed);
+  ui_text(renderer, width - MARGIN - (int)strlen(label) * 6, 54, label, 1);
   SDL_SetRenderDrawColor(renderer, 50, 100, 180, 255);
   SDL_RenderFillRect(renderer, &restart);
   SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255);
@@ -412,7 +417,7 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
   }
   const char *status = stopped ? stopped : paused ? "PAUSED" : "RUNNING";
   int status_x = restart.x - 12 - (int)strlen(status) * 12;
-  if (status_x > MARGIN + (int)strlen(label) * 6 * label_scale + 12)
+  if (status_x > MARGIN + name_width + 12)
     ui_text(renderer, status_x, 12, status, 2);
   snprintf(label, sizeof label, "ROWS %zu-%zu/%zu  STATE %c  HEAD %" PRId64 "  CELL %d  %s",
            first, end - 1, history->count - 1, selected->state, selected->head,
