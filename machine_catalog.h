@@ -2,6 +2,7 @@
 #define MACHINE_CATALOG_H
 
 #include <stdbool.h>
+#include <gmp.h>
 
 enum {
   PREVIEW_STEPS = 24,
@@ -9,19 +10,22 @@ enum {
 };
 
 typedef struct {
-  char instructions[14];
+  char *instructions;
   unsigned char cells[PREVIEW_STEPS + 1][PREVIEW_COLUMNS];
   int heads[PREVIEW_STEPS + 1];
   int steps;
   bool halted;
 } MachinePreview;
 
-// Supports one or two working states, plus halt H.
-int machine_catalog_count(int states);
-// Jump to the first machine in the next/previous group sharing a left prefix.
-// prefix_symbols is 3 or 6; direction is +1 or -1. Return -1 at either end.
-int machine_catalog_jump(int states, int index, int prefix_symbols, int direction);
-// Index must be less than the count. Each preview starts on a fresh zero tape.
-void machine_catalog_preview(int states, int index, MachinePreview *preview);
+// GMP output values must be initialized by the caller.
+bool machine_catalog_parse_states(const char *text, unsigned long *states);
+bool machine_catalog_count(unsigned long states, mpz_t count);
+// Prefix sizes 3 and 6 mean the first one or two complete transition rules.
+// Return false when there is no next/previous group.
+bool machine_catalog_jump(unsigned long states, const mpz_t index,
+                           int prefix_symbols, int direction, mpz_t destination);
+// Initialize previews with {0}. Reusing a preview replaces its owned instructions.
+bool machine_catalog_preview(unsigned long states, const mpz_t index, MachinePreview *preview);
+void machine_preview_clear(MachinePreview *preview);
 
 #endif

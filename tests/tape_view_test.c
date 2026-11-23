@@ -291,6 +291,23 @@ void it_should_restore_automatic_fitting_with_end(void) {
   assert(strstr(title, "LIVE") != NULL);
 }
 
+void it_should_display_and_restart_a_multi_letter_starting_state(void) {
+  char instructions[8000] = "0LA0LA";
+  for (int i = 1; i < 999; i++)
+    strcat(instructions, "_0LA0LA");
+  strcat(instructions, "_1RALM0LALM");
+  const TuringMachine *machine = turing_init_with_state(instructions, false, state_from_index(999));
+  click_restart();
+  close_after_first_frame();
+  tape_view_run(renderer, machine, true, 2);
+
+  assert(machine->state == state_from_index(999));
+  assert(machine->head == 0);
+  const char *title = SDL_GetWindowTitle(SDL_RenderGetWindow(renderer));
+  assert(strstr(title, "state ALM") != NULL);
+  assert(strstr(title, "step 0/0") != NULL);
+}
+
 int main(void) {
   SDL_setenv("SDL_VIDEODRIVER", "dummy", 1);
   SDL_Init(SDL_INIT_VIDEO);
@@ -314,6 +331,7 @@ int main(void) {
   it_should_zoom_in_around_the_mouse_and_keep_zoom_when_stepping();
   it_should_zoom_out_with_ctrl_wheel_down();
   it_should_restore_automatic_fitting_with_end();
+  it_should_display_and_restart_a_multi_letter_starting_state();
 
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);

@@ -13,7 +13,7 @@ typedef struct {
   int64_t head;
   int64_t written_position;
   unsigned char previous_symbol;
-  char state;
+  TuringState state;
 } TapeRow;
 
 typedef struct {
@@ -62,10 +62,8 @@ static const char *advance(TapeHistory *history, const TuringMachine *machine) {
   if (machine->state == 'H')
     return "HALTED";
 
-  int state = machine->state - 'A';
   unsigned char symbol = machine->tape[machine->head];
-  size_t offset = (size_t)state * 7 + symbol * 3;
-  if (state < 0 || state > 25 || symbol > 1 || offset + 2 >= strlen(machine->instructions))
+  if (!turing_can_step())
     return "MISSING TRANSITION";
   if (!reserve_row(history))
     return "OUT OF MEMORY";
@@ -383,11 +381,18 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
   SDL_Rect restart = restart_button(width);
   SDL_SetRenderDrawColor(renderer, 30, 30, 30, 255);
   int name_space = restart.x - MARGIN - 12;
-  int name_scale = (int)strlen(machine->instructions) * 12 <= name_space ? 2 : 1;
-  int name_width = (int)strlen(machine->instructions) * 6 * name_scale;
+  size_t name_length = strlen(machine->instructions);
+  int name_scale = name_length <= (size_t)(name_space / 12) ? 2 : 1;
+  int visible = name_space / (6 * name_scale);
+  if (visible > (int)sizeof label - 1)
+    visible = sizeof label - 1;
+  snprintf(label, sizeof label, "%.*s", visible, machine->instructions);
+  if (name_length > (size_t)visible && visible >= 3)
+    memcpy(label + visible - 3, "...", 3);
+  int name_width = (int)strlen(label) * 6 * name_scale;
   SDL_Rect name_area = {MARGIN, 6, name_space, 24};
   SDL_RenderSetClipRect(renderer, &name_area);
-  ui_text(renderer, MARGIN, 12, machine->instructions, name_scale);
+  ui_text(renderer, MARGIN, 12, label, name_scale);
   SDL_RenderSetClipRect(renderer, NULL);
   ui_text(renderer, MARGIN, 54, "1", 1);
   snprintf(label, sizeof label, "%d STEPS/S", speed);
@@ -419,8 +424,10 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
   int status_x = restart.x - 12 - (int)strlen(status) * 12;
   if (status_x > MARGIN + name_width + 12)
     ui_text(renderer, status_x, 12, status, 2);
-  snprintf(label, sizeof label, "ROWS %zu-%zu/%zu  STATE %c  HEAD %" PRId64 "  CELL %d  %s",
-           first, end - 1, history->count - 1, selected->state, selected->head,
+  char state_name[STATE_NAME_CAPACITY];
+  state_format(selected->state, state_name);
+  snprintf(label, sizeof label, "ROWS %zu-%zu/%zu  STATE %s  HEAD %" PRId64 "  CELL %d  %s",
+           first, end - 1, history->count - 1, state_name, selected->head,
            cell_size, view->follow_latest ? "LIVE" : "HISTORY");
   ui_text(renderer, MARGIN, 68, label, 1);
   SDL_RenderPresent(renderer);
@@ -428,9 +435,9 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
   SDL_Window *window = SDL_RenderGetWindow(renderer);
   if (window != NULL) {
     snprintf(label, sizeof label,
-             "Tape %s | rows %zu-%zu | step %zu/%zu | state %c | head %" PRId64
+             "Tape %.80s | rows %zu-%zu | step %zu/%zu | state %s | head %" PRId64
              " | %s | %d steps/s | cell %d | left %" PRId64 " | %s | End: live",
-             machine->instructions, first, end - 1, end - 1, history->count - 1, selected->state, selected->head,
+             machine->instructions, first, end - 1, end - 1, history->count - 1, state_name, selected->head,
              status, speed, cell_size, left, view->follow_latest ? "LIVE" : "HISTORY");
     SDL_SetWindowTitle(window, label);
   }
@@ -440,7 +447,7 @@ static bool draw_history(SDL_Renderer *renderer, const TuringMachine *machine,
 TapeViewResult tape_view_run(SDL_Renderer *renderer, const TuringMachine *machine,
                              bool from_grid, size_t initial_steps) {
   TapeHistory history = {0};
-  char initial_state = machine->state;
+  TuringState initial_state = machine->state;
   TapeCanvas canvas = {0};
   TapeViewport view = {.cell_size = MAX_CELL_SIZE, .follow_latest = true};
   if (!reserve_row(&history))

@@ -2,8 +2,8 @@
 
 A small SDL2 visualization of a Turing machine's tape.
 
-Install SDL2 development headers and `pkg-config` first (on Debian or Ubuntu:
-`sudo apt install libsdl2-dev pkg-config`). Then build with `make` and run with
+Install SDL2 and GMP development headers and `pkg-config` first (on Debian or Ubuntu:
+`sudo apt install libsdl2-dev libgmp-dev pkg-config`). Then build with `make` and run with
 `./2d-turing`. Black squares represent 1 and white squares represent 0.
 The first row is the initial tape; each step adds a row underneath it. The head
 on the last visible row has a red outline. Columns line up across the history.
@@ -42,7 +42,7 @@ Press Escape or use the close button to exit. Use `make clean` to remove the exe
 
 ## Machine galleries
 
-Run `./2d-turing --one-state` for an 8 by 8 grid of all 64 rule tables. Each
+Run `./2d-turing --states 1` for an 8 by 8 grid of all 64 rule tables. Each
 transition can write 0 or 1, move left or right, and return to A or halt at H:
 8 choices for each of the two symbols, giving 64 machines. H is not counted as
 a working state. Mirror images and rules with identical behaviour are included.
@@ -59,16 +59,44 @@ after one step or keeps moving in one direction into untouched zeros. Its rule
 for reading 1 is never reached. Rows share the rule for 0; columns vary the rule
 for 1.
 
-Run `./2d-turing --two-state` for all 20,736 two-state rule tables. With working
+Run `./2d-turing --states 2` for all 20,736 two-state rule tables. With working
 states A and B plus halt H, each of the four rules has 12 choices, giving
 12^4 machines. These include rules where B is never reached.
 
 The two-state gallery has 324 pages of 64 previews. Use First/Prev/Next/Last,
 Page Up/Page Down (or Left/Right), and Home/End to browse. Returning from a
-machine keeps the current page. The 1 State and 2 States buttons switch galleries.
+machine keeps the current page. Use the −/+ buttons beside States to change the
+state count, or click the number, type a new count, and press Enter. Escape
+cancels editing.
+
+Run `./2d-turing --states 3` for the three-state catalog: A, B, C, and halt H
+give 16 choices per rule and 16^6 = 16,777,216 rule tables across 262,144 pages.
+Only the current page's 64 previews are generated. The same page and prefix
+arrows work here.
+
+For any positive number of working states, use `./2d-turing --states N`, for example:
+
+```sh
+./2d-turing --states 26
+./2d-turing --states 1000
+```
+
+State names run A through G, I through Z, then AA, AB, and so on. Only the exact
+name H means halt; AH and HA are working states. Instruction blocks follow that
+order. For example, `1RAA` writes 1, moves right, and enters AA. Existing A/B/C
+machine strings work unchanged.
+
+An N-state catalog has `[4 × (N + 1)]^(2N)` rule tables. Catalog indexes and
+navigation use arbitrary precision integers, so large catalogs do not overflow.
+Only the current page's 64 machines are generated and simulated. Very large
+counts still require time and memory proportional to the requested state count.
+Long numbers use scientific notation on screen, and long instruction strings
+are truncated to fit their tiles. Neither changes the actual machine or index.
+
 The compact previous/next groups are `<<< << <` and `> >> >>>`. Single arrows
-move one page, double arrows jump by the leftmost 6 characters, and triple arrows
-jump by the leftmost 3 characters. Jumps go to the first machine in the next or
+move one page, double arrows jump by the first two transition rules (6 symbols),
+and triple arrows jump by the first transition rule (3 symbols). A multi-letter
+state name such as AA counts as one state symbol. Jumps go to the first machine in the next or
 previous group sharing that prefix. The destination page opens
 and that machine gets a blue outline. Further jumps use the highlighted machine,
 including when a group begins partway through a page. Clicking a tile also selects

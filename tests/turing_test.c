@@ -19,7 +19,7 @@ typedef struct {
   bool ones;
   unsigned char expected_symbol;
   int64_t expected_head;
-  char expected_state;
+  TuringState expected_state;
 } StepCase;
 
 static const StepCase cases[] = {
@@ -124,7 +124,46 @@ void step_should_grow_tape_at_right_boundary(void) {
   assert(machine->tape[512] == 0);
 }
 
+void step_should_execute_a_multi_letter_state(void) {
+  char instructions[256] = "1RAA0LA";
+  for (int state = 1; state < 25; state++)
+    strcat(instructions, "_0LA0LA");
+  strcat(instructions, "_1RH0LA");
+  const TuringMachine *machine = turing_init(instructions, false);
+
+  step();
+  assert(machine->state == state_from_index(25));
+  assert(machine->head == 1);
+  StepResult result = step();
+  assert(result == STEP_HALTED);
+  assert(machine->state == 'H');
+  assert(machine->head == 2);
+  assert(machine->tape[1] == 1);
+}
+
+void step_should_use_i_as_the_eighth_working_state(void) {
+  const TuringMachine *machine = turing_init(
+    "1RI0LA_0LA0LA_0LA0LA_0LA0LA_0LA0LA_0LA0LA_0LA0LA_1RH0LA", false);
+  step();
+  assert(machine->state == 'I');
+  StepResult result = step();
+  assert(result == STEP_HALTED);
+  assert(machine->head == 2);
+}
+
+void step_should_report_an_undefined_multi_letter_state(void) {
+  const TuringMachine *machine = turing_init("1RAA0LA", false);
+  assert(step() == STEP_RUNNING);
+  assert(machine->state == state_from_index(25));
+  assert(step() == STEP_MISSING_TRANSITION);
+  assert(machine->head == 1);
+  assert(machine->tape[1] == 0);
+}
+
 int main(void) {
+  step_should_report_an_undefined_multi_letter_state();
+  step_should_execute_a_multi_letter_state();
+  step_should_use_i_as_the_eighth_working_state();
   it_should_initialise_turing_machine_and_store_instructions();
   step_should_execute_one_instruction();
   more_steps();

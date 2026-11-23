@@ -3,6 +3,6 @@
 
 #include <SDL.h>
 
-int catalog_view_run(SDL_Renderer *renderer, int states);
+int catalog_view_run(SDL_Renderer *renderer, unsigned long states);
 
 #endif

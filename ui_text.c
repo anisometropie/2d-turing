@@ -44,7 +44,8 @@ static const unsigned char glyphs[][5] = {
   {0x40, 0x40, 0x40, 0x40, 0x40}, // _
   {0x08, 0x08, 0x3e, 0x08, 0x08}, // +
   {0x08, 0x14, 0x22, 0x41, 0x00}, // <
-  {0x41, 0x22, 0x14, 0x08, 0x00}  // >
+  {0x41, 0x22, 0x14, 0x08, 0x00}, // >
+  {0x00, 0x60, 0x60, 0x00, 0x00}  // .
 };
 
 void ui_text(SDL_Renderer *renderer, int x, int y, const char *text, int scale) {
@@ -68,6 +69,8 @@ void ui_text(SDL_Renderer *renderer, int x, int y, const char *text, int scale) 
       index = 41;
     else if (*text == '>')
       index = 42;
+    else if (*text == '.')
+      index = 43;
     if (index < 0)
       continue;
     for (int column = 0; column < 5; column++) {
